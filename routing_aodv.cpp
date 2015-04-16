@@ -2501,6 +2501,7 @@ void AodvInsertSeenTable(
         SetIPv4AddressInfo(&broadcastAddress, ANY_IP);
     }
     seenTable->rear->floodingId = floodingId;
+    seenTable->rear->seenflag = FALSE; //for NDMP AODV implementation
     seenTable->rear->next = NULL;
 
     if (AODV_DEBUG)

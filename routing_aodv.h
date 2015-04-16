@@ -491,6 +491,8 @@ typedef struct str_aodv_rreq_seen
 
     // Broadcast address of RREQ
     unsigned int floodingId;
+    // seenflag for NDMP-AODV implementation
+    BOOL seenflag;
     struct str_aodv_rreq_seen *next;
     struct str_aodv_rreq_seen *previous;
 } AodvRreqSeenNode;
