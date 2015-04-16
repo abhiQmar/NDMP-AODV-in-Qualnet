@@ -5595,6 +5595,41 @@ void AodvHandleRequest(
             return;
         }
 
+    // The node is the destination of the route
+    if (AodvIpIsMyIP(node, destinationAddress))
+    {
+        // The node itself the destination so send rrep back
+
+        // Since this is the destination the reverse route lifetime will be
+        // added as active route timeout
+
+        revRtLifetime = AODV_ACTIVE_ROUTE_TIMEOUT;
+
+        aodv->stats.numRequestRecvedAsDest++;
+
+        if (AODV_DEBUG)
+        {
+            printf("\ti'm the destination\n");
+        }
+
+        // Route Reply Generation by the Destination
+
+        // If the generating node is the destination itself, it MUST
+        // update its own sequence number to the maximum of its current
+        // sequence number and the destination sequence number in the
+        // RREQ packet.  The destination node places the value zero in
+        // the Hop Count field of the RREP. Sec: 8.6.1
+
+        aodv->seqNumber = MAX(aodv->seqNumber,
+            (unsigned int) dseqNum);
+
+        AodvInitiateRREP(
+            node,
+            aodv,
+            msg,
+            interfaceIndex,
+            srcAddr);
+    }
 
 
     // When a node receives a flooded RREQ, it first checks to determine
@@ -5602,6 +5637,7 @@ void AodvHandleRequest(
     // Flooding ID within at least the last FLOOD_RECORD_TIME milliseconds.
     // If such a RREQ has been received, the node silently discards the
     // newly received RREQ. Sec: 8.5
+
 
     if (FALSE == AodvLookupSeenTable(aodv,
                                      sourceAddress,
@@ -5632,44 +5668,8 @@ void AodvHandleRequest(
             floodingId,
             &aodv->seenTable);
 
-        // The node is the destination of the route
-        if (AodvIpIsMyIP(node, destinationAddress))
-        {
-            // The node itself the destination so send rrep back
-
-            // Since this is the destination the reverse route lifetime will be
-            // added as active route timeout
-
-            revRtLifetime = AODV_ACTIVE_ROUTE_TIMEOUT;
-
-            aodv->stats.numRequestRecvedAsDest++;
-
-            if (AODV_DEBUG)
-            {
-                printf("\ti'm the destination\n");
-            }
-
-            // Route Reply Generation by the Destination
-
-            // If the generating node is the destination itself, it MUST
-            // update its own sequence number to the maximum of its current
-            // sequence number and the destination sequence number in the
-            // RREQ packet.  The destination node places the value zero in
-            // the Hop Count field of the RREP. Sec: 8.6.1
-
-            aodv->seqNumber = MAX(aodv->seqNumber,
-                (unsigned int) dseqNum);
-
-            AodvInitiateRREP(
-                node,
-                aodv,
-                msg,
-                interfaceIndex,
-                srcAddr);
-        }
-
-        else
-        {
+        // else
+        // {
             // The node is not the destination for the packet so check
             // whether it has an active route to the destination
 
@@ -5776,9 +5776,9 @@ void AodvHandleRequest(
                 {
                     printf("\thas a fresh route to destination\n");
                 }
-                replyByIntermediate = TRUE;
+                // replyByIntermediate = TRUE; // Commenting this as this enables Intermediates to reply
             } // else
-        } // else (not dest)
+//        } // else (not dest)
 
 
         // The node always creates or updates a reverse route to the Source
