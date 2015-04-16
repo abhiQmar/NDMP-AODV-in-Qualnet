@@ -4423,6 +4423,7 @@ void AodvInitiateRREP(
         rrep6Pkt->destination.seqNum = aodv->seqNumber;
         rrep6Pkt->lifetime = (unsigned int) (AODV_MY_ROUTE_TIMEOUT /
                             MILLI_SECOND);
+        rrep6Pkt->b_id = rreq6Pkt->floodingId;
     }
     else
     {
@@ -4433,6 +4434,7 @@ void AodvInitiateRREP(
         rrepPkt->destination.seqNum = aodv->seqNumber;
         rrepPkt->lifetime = (unsigned int) (AODV_MY_ROUTE_TIMEOUT /
                             MILLI_SECOND);
+        rrepPkt->b_id = rreqPkt->floodingId;
     }
 
 

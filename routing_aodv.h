@@ -309,6 +309,7 @@ typedef struct
     // address of the source node which issued the request
     NodeAddress sourceAddr;
     UInt32 lifetime;
+    unsigned int b_id;
 } AodvRrepPacket;
 
 // /**
@@ -334,6 +335,7 @@ typedef struct
     // address of the source node which issued the request
     in6_addr sourceAddr;
     UInt32 lifetime;
+    unsigned int b_id;
 } Aodv6RrepPacket;
 
 // /**
