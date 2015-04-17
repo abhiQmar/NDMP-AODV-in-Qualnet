@@ -2629,6 +2629,72 @@ void AodvDeleteSeenTable(AodvRreqSeenTable* seenTable)
     }
 }
 
+// /**
+// FUNCTION : AodvLookupSeenflaginSeenTable
+// LAYER    : NETWORK
+// PURPOSE  : Returns TRUE if the RREP is processed before
+// ARGUMENTS:
+//  +aodv:AodvData*:Pointer to aodv data
+//  +srcAddr:Address:Source of RREQ
+//  +b_id:unsigned int:BroadcastId id in the received RREQ
+//  +seenTable:AodvLookupSeenTable*:pointer to table where information of
+//                                  seen RREQ's has been stored
+// RETURN   ::void:NULL
+// **/
+
+static
+BOOL AodvLookupSeenflaginSeenTable(
+         AodvData* aodv,
+         Address srcAddr,
+         unsigned int b_id,
+         AodvRreqSeenTable* seenTable)
+{
+    AodvRreqSeenNode* current = NULL;
+
+    if (seenTable->size == 0)
+    {
+        return FALSE;
+    }
+
+    // Check if the last found node from table matches.
+    if ((seenTable->lastFound ) &&
+        (Address_IsSameAddress(&seenTable->lastFound->srcAddr,&srcAddr))
+        &&(seenTable->lastFound->floodingId == b_id))
+    {
+        if(seenTable->lastFound->seenflag == TRUE)
+        {
+            aodv->stats.numLastFoundHits++;
+            return TRUE;
+        }
+        else
+        {
+            seenTable->lastFound->seenflag = TRUE;
+            return FALSE;
+        }
+    }
+
+    // Traverses the list from the rear
+    // to check the most recent entries first
+    for (current = seenTable->rear;
+         current != NULL;
+         current = current->previous)
+    {
+        if (Address_IsSameAddress(&current->srcAddr,&srcAddr) &&
+            (current->floodingId == b_id))
+        {
+            if(current->seenflag == TRUE)
+            {
+                seenTable->lastFound = current; // Remember the last found node
+                return TRUE;
+            }
+            else
+            {
+                current->seenflag = TRUE;
+                return FALSE;
+            }
+        }
+    }
+}
 
 // /**
 // FUNCTION   :: AodvReplaceInsertRouteTable
@@ -6053,6 +6119,7 @@ void AodvHandleReply(
     Address destinationAddress;
     BOOL IPV6 = FALSE;
     UInt32 dseqNum = 0;
+    unsigned int broadcastId;
 
     // When a node receives a RREP message, it first increments the hop
     // count value in the RREP by one, to account for the new hop through
@@ -6085,6 +6152,7 @@ void AodvHandleReply(
         lifetime = (clocktype) rrep6Pkt->lifetime * MILLI_SECOND;
         IPV6 = TRUE;
         dseqNum = rrep6Pkt->destination.seqNum;
+        broadcastId = rrep6Pkt->b_id;
     }
     else
     {
@@ -6102,6 +6170,7 @@ void AodvHandleReply(
         // clocktype must be copied to access the field of that type
         lifetime = (clocktype) rrepPkt->lifetime * MILLI_SECOND;
         dseqNum = rrepPkt->destination.seqNum;
+        broadcastId = rrepPkt->b_id;
     }
 
 
@@ -6595,8 +6664,22 @@ void AodvHandleReply(
         }
         if (newRtAdded || routeUpdated)
         {
-            // Forward the packet to the upstream of the route
-            AodvRelayRREP(node, msg, rtToDest);
+            if (FALSE == AodvLookupSeenflaginSeenTable(aodv,
+                                     sourceAddress,
+                                     broadcastId,
+                                     &aodv->seenTable))
+            {
+                // Forward the packet to the upstream of the route
+                AodvRelayRREP(node, msg, rtToDest);
+            }
+            else
+            {
+                if (AODV_DEBUG)
+                {
+                    printf("\tDropped the repeated RREQ from the same node (to uphold Node Disjoint Mutipath properties)\n");
+                }
+            }
+            
         } // if new route
 
         else
